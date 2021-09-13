@@ -1,9 +1,11 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using TMPro.Examples;
 using UnityEngine;
+using UnityEngine.Analytics;
 
 public class Square : MonoBehaviour
 {
@@ -12,7 +14,7 @@ public class Square : MonoBehaviour
     public bool CanMerge = true;
     public int Weight
     {
-        get => weight;
+        get => weight+MergeAfterReachingTarget.Count;
         set
         {
             weight = value;
@@ -20,21 +22,19 @@ public class Square : MonoBehaviour
             
         }
     }
-
     public float speed = 5;
     private int weight;
-    public Vector2Int TargetPosition { get; set; }
-    public Square MergeAfterReachingTarget { get; set; }
+    public Queue<Vector2> TargetPosition  = new Queue<Vector2>();
+    public Queue<Square> MergeAfterReachingTarget = new Queue<Square>();
 
     public static Square Merge(Square from, Square to)
     {
         from.Weight++;
         Destroy(to.gameObject);
-        from.CanMerge = false;
         from.SetColor();
         return from;
     }
-
+    
     void SetColor()
     {
         var sprite = GetComponentInChildren<SpriteRenderer>();
@@ -58,16 +58,62 @@ public class Square : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        Vector3 nextPosition = Vector2.MoveTowards(transform.localPosition, TargetPosition, Time.deltaTime * speed);
+        if (!GameController.Instance.GameOnPause)
+        {
+            MoveSquare();
+        }
+    }
+
+    public SquareInformation Dump()
+    {
+        Vector2 pos = transform.localPosition;
+        
+        if (TargetPosition.Count!=0)
+        {
+            pos = TargetPosition.Last();
+        }
+
+        int w = this.Weight;
+        
+        return new SquareInformation(pos,w);
+    }
+
+    public void Load(SquareInformation square)
+    {
+        transform.localPosition = square.Position;
+        Weight = square.Weight;
+        TargetPosition.Clear();
+        foreach (Square sq in MergeAfterReachingTarget)
+        {
+            Destroy(sq);
+        }
+        MergeAfterReachingTarget.Clear();
+    }
+
+    private void MoveSquare()
+    {
+        if (TargetPosition.Count == 0) return;
+        Vector2 target = TargetPosition.Peek();
+        Vector3 nextPosition = Vector2.MoveTowards(transform.localPosition, target, Time.deltaTime * speed);
         transform.localPosition = nextPosition;
 
-        if ((Vector2) transform.localPosition == (Vector2) TargetPosition)
+        if ((Vector2) transform.localPosition != target) return;
+        transform.localPosition = target;
+        TargetPosition.Dequeue();
+        
+        if (MergeAfterReachingTarget.Count == 0) return;
+        Square sq = MergeAfterReachingTarget.Peek();
+        if (!((Vector2)sq.transform.localPosition==target)) return;
+        MergeAfterReachingTarget.Dequeue();
+        Merge(this, sq);
+    }
+
+    public static bool Compatible(Square a, Square b)
+    {
+        if (a != null && b!=null)
         {
-            if (MergeAfterReachingTarget!=null)
-            {
-                Merge(this, MergeAfterReachingTarget);
-                MergeAfterReachingTarget = null;
-            }
+            return a.Weight == b.Weight;
         }
+        return false;
     }
 }

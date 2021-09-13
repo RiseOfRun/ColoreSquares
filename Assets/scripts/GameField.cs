@@ -5,7 +5,6 @@ using System.Data;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Transactions;
-using TreeEditor;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Diagnostics;
@@ -17,29 +16,28 @@ public class GameField : MonoBehaviour
     public Square SquarePrefab;
     public GameObject FramePrefab;
     public bool CanSpawn = true;
-    public bool CanMove = true;
     public int rows = 4;
     public int cols = 4;
+    public Square[,] field;
+    
     private float cellSize;
     private float space;
-    Square[,] field;
     List<int[]> emptyCells= new List<int[]>();
-    
-    
     // Start is called before the first frame update
     void Start()
     {
+        if (SwipeDetector.Instance!=null)
+        {
+            SwipeDetector.Instance.OnSwipe += OnInput;
+        }
+        GameController.Instance.Field = this;
+        GameController.Instance.GameOnPause = false;
         BuildGrid();
+        GameController.Instance.StartGame(false);
     }
 
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.A))
-        {
-            SpawnRandomSquare();
-            // SpawnRandomCell();
-        }
-
         if (Input.GetKeyDown(KeyCode.DownArrow))
         {
             OnInput(Vector2Int.down);
@@ -60,54 +58,6 @@ public class GameField : MonoBehaviour
 
     private void OnInput(Vector2Int diraction)
     {
-        // int start = diraction.x > 0 || diraction.y < 0 ? rows-1 : 0;
-        // int dir = diraction.x > 0 || diraction.y < 0 ? -1 : 1;
-        //
-        // for (int i = start+dir; i >= 0 && i < rows; i+=dir)
-        // {
-        //     for (int j = 0; j < rows; j++)
-        //     {
-        //         bool row = diraction.x == 0;
-        //         Cell currentCell = !row ? field[j,i] : field[i,j];
-        //         if (currentCell.empty)
-        //         {
-        //             continue;
-        //         }
-        //         
-        //         Cell nextCell = null;
-        //         for (int k = i-dir; k >=0 && k<rows; k-=dir)
-        //         {
-        //             row = diraction.x == 0;
-        //             Cell tmp = row ? field[k,j] : field[j,k];
-        //             if (tmp.empty)
-        //             {
-        //                 nextCell = tmp;
-        //                 continue;
-        //             }
-        //             if (!tmp.HasMerged)
-        //             {
-        //                 break;
-        //                 nextCell = tmp;
-        //             }
-        //         }
-        //         if (nextCell != null)
-        //         { 
-        //             MoveTo(currentCell,nextCell);
-        //         }
-        //     }
-        // }
-
-        //     bool isOpposite = ;
-        //
-        //     //for x in grid:
-        //     //  for y in grid:
-        //     //    MoveCell(coords, direction)
-        // }
-        //
-        //
-        //
-        // private Cell Get(Vector2Int pos){}
-        // private void Set(Vector2Int pos, Cell cell){}
         bool moveDone = false;
         foreach (var square in field)
         {
@@ -116,17 +66,17 @@ public class GameField : MonoBehaviour
                 square.CanMerge = true;
             }
         }
-        
+
         int start = diraction.x > 0 || diraction.y > 0 ? rows - 1 : 0;
         int dir = diraction.x > 0 || diraction.y > 0 ? -1 : 1;
-        bool Opposite = diraction.x == 0;
+        bool opposite = diraction.x == 0;
         
         for (int i = start+dir; i>=0 && i<rows; i+=dir)
         {
             for (int j = 0; j<rows; j++)
             {
 
-                Vector2Int xy = Opposite ? new Vector2Int(j, i) : new Vector2Int(i, j); 
+                Vector2Int xy = opposite ? new Vector2Int(j, i) : new Vector2Int(i, j); 
                 Square current = Get(xy); 
                 if (current == null)
                 {
@@ -136,19 +86,28 @@ public class GameField : MonoBehaviour
                 Move(xy,diraction,ref moveDone);
             }
         }
+        
         if (moveDone)
         {
             SpawnRandomSquare();
-            CanMove = true;
+            GameController.Instance.TurnPerformed();
+            GameController.Instance.CanBack = true;
         }
-        else
-        {
-            CanMove = false;
-        }
+        GameController.Instance.CheckGameState();
     }
 
+    private Square Get(Vector2Int pos, out bool found)
+    {
+        found = false;
+        Square toReturn = null;
+        if (pos.x < 0 || pos.x > rows - 1 || pos.y < 0 || pos.y > cols - 1) return toReturn;
+        toReturn = Get(pos);
+        found = true;
+        return toReturn;
+    }
     private Square Get(Vector2Int pos)
     {
+        
         return field[pos.x, pos.y];
     }
 
@@ -156,14 +115,6 @@ public class GameField : MonoBehaviour
     {
         field[pos.x, pos.y] = square;
     }
-    void MoveTo(Cell from, Cell to)
-        {
-            Debug.Log($"Moving object from {from.transform.position} to {to.transform.position}");
-            to.square = from.square;
-            to.square.gameObject.transform.position = to.transform.position;
-            from.empty = true;
-            to.empty = false;
-        }
 
     void Move(Vector2Int currentPosition, Vector2Int diraction, ref bool someMoved)
     {
@@ -188,8 +139,9 @@ public class GameField : MonoBehaviour
                     if (nextSquare.CanMerge)
                     {
                         current.CanMerge = false;
-                        current.MergeAfterReachingTarget = nextSquare;
-                        currentPosition = nextPosition;
+                        current.MergeAfterReachingTarget.Enqueue(nextSquare);
+                        GameController.Instance.Score += (int)Mathf.Pow(2, current.Weight);
+                            currentPosition = nextPosition;
                         someMoved = true;
                     }
                 }
@@ -199,7 +151,7 @@ public class GameField : MonoBehaviour
             nextPosition += diraction;
         }
 
-        current.TargetPosition = currentPosition;
+        current.TargetPosition.Enqueue(currentPosition);
         Set(lastPosition, null);
         Set(currentPosition, current);
     }
@@ -219,11 +171,7 @@ public class GameField : MonoBehaviour
         }
         Debug.Log(a);
     }
-
-    void Merge(Square from, Square to)
-    {
-        
-    }
+    
 
     void BuildGrid()
     {
@@ -238,11 +186,9 @@ public class GameField : MonoBehaviour
             }
         }
         CanSpawn = true;
-        SpawnRandomSquare();
-        SpawnRandomSquare();
     }
 
-    private void SpawnRandomSquare()
+    public void SpawnRandomSquare()
     {
         List<Vector2Int> pool = new List<Vector2Int>();
         for (int i = 0; i < rows; i++)
@@ -275,23 +221,68 @@ public class GameField : MonoBehaviour
         int number = r.Next(100) > 95 ? 2 : 1;
         square.Weight = number;
         square.transform.localPosition = new Vector2(position.x,position.y);
-        square.TargetPosition = position;
         Set(position,square);    
     }
-    // void SpawnRandomCell()
-        // {
-        //     if (!CanSpawn)
-        //     {
-        //         return;
-        //     }
-        //     System.Random r = new System.Random();
-        //     IEnumerable<Cell> emptyCells = cells.Where(x => x.empty);
-        //     int count = emptyCells.Count();
-        //     if (count==0)
-        //     {
-        //         CanSpawn = false;
-        //         return;
-        //     }
-        //     Cell randomCell = emptyCells.ElementAt(r.Next(emptyCells.Count()-1));
-        //     randomCell.Spawn();
+
+    public void SpawnDebugSquare(Vector2Int position)
+    {
+        Square square = Instantiate(SquarePrefab, transform);
+        square.Weight = 10;
+        square.transform.localPosition = (Vector2)position;
+        Set(position,square);
+    }
+    
+    public string SaveActiveSquares()
+    {
+        GameController.Instance.GameOnPause = true;
+        List<SquareInformation> squares = new List<SquareInformation>();
+        Square[] activeSquares = field.Cast<Square>().Where(square => square != null).ToArray();
+        foreach (var square in activeSquares)
+        {
+            squares.Add(square.Dump());
+        }
+        GameController.Instance.GameOnPause = false;
+        return squares.Serialize();
+
+    }
+
+    public void Refresh()
+    {
+        foreach (Transform child in transform)
+        {
+            if (child.GetComponent<Square>())
+            {
+                Destroy(child.gameObject);
+            }
+        }
+    }
+
+    public bool Full()
+    {
+        bool full = true;
+        if (field.Cast<Square>().Any(cell => cell == null))
+        {
+            full = false;
+            return full;
+        }
+
+        foreach (var cell in field)
+        {
+            Vector2Int pos = Vector2Int.RoundToInt(cell.transform.localPosition);
+            bool found = false;
+
+            Square nextCell=null; 
+            nextCell= Get(pos + new Vector2Int(-1, 0),out found);
+            if (Square.Compatible(nextCell, cell)) return false;
+            nextCell= Get(pos + new Vector2Int(1, 0),out found);
+            if (Square.Compatible(nextCell, cell)) return false;
+            nextCell= Get(pos + new Vector2Int(0, 1),out found);
+            if (Square.Compatible(nextCell, cell)) return false;
+            nextCell= Get(pos + new Vector2Int(0, -1),out found);
+            if (Square.Compatible(nextCell, cell)) return false;
+        }
+
+        return true;
+    }
+    
 }

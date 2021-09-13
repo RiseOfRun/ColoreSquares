@@ -66,6 +66,8 @@
       <Path>Temp</Path>
       <Path>UserSettings</Path>
       <Path>obj</Path>
+      <Path>webGLDevBuild</Path>
+      <Path>webglBuild</Path>
     </explicitExcludes>
   </component>
 </project>
