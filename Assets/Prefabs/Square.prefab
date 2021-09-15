@@ -341,7 +341,7 @@ MonoBehaviour:
   - {r: 0.6640745, g: 0.5613208, b: 1, a: 1}
   - {r: 0.4305127, g: 0.3920879, b: 0.8396226, a: 1}
   CanMerge: 1
-  speed: 15
+  speed: 20
 --- !u!210 &4752099508700313663
 SortingGroup:
   m_ObjectHideFlags: 0

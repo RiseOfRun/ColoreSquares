@@ -26,7 +26,7 @@ Transform:
   m_GameObject: {fileID: 2489366299515284670}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 1.5, y: 1.5, z: 0}
-  m_LocalScale: {x: 4.5, y: 4.5, z: 4.426296}
+  m_LocalScale: {x: 7.8688526, y: 7.8688526, z: 4.426296}
   m_Children: []
   m_Father: {fileID: 2489366300243698749}
   m_RootOrder: 0
@@ -75,8 +75,8 @@ SpriteRenderer:
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
-  m_DrawMode: 0
-  m_Size: {x: 0.45, y: 0.45}
+  m_DrawMode: 1
+  m_Size: {x: 0.55, y: 0.55}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
@@ -127,8 +127,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Padding: 2
-  TilePrefab: {fileID: 0}
-  CellPrefab: {fileID: 0}
+  SquarePrefab: {fileID: 2401980745192491818, guid: afe05d456c8640649aba21e9439cb4fb, type: 3}
+  FramePrefab: {fileID: 5265492950067769659, guid: d0cfe7d5f4a469446874746d03ba824f, type: 3}
   CanSpawn: 1
-  rows: 4
-  cols: 4
+  size: 2

@@ -3,10 +3,10 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class SwipeDetector : MonoBehaviour
+public class SwipeDetectHelper : MonoBehaviour
 {
     public float triggerDistance = 0.5f;
-    public static SwipeDetector Instance;
+    public static SwipeDetectHelper Instance;
     
     private bool inSwipe = false;
     private Vector2 startPosition;
@@ -63,11 +63,12 @@ public class SwipeDetector : MonoBehaviour
             inSwipe = false;
             toSwipe.x = diraction.x > 0 ? 1 : -1;
         }
-        if (Mathf.Abs(diraction.y)>=triggerDistance)
+        else if (Mathf.Abs(diraction.y)>=triggerDistance)
         {
             inSwipe = false;
             toSwipe.y = diraction.y > 0 ? 1 : -1;
         }
+        
         if (!inSwipe)
         {
             OnSwipe?.Invoke(toSwipe);
