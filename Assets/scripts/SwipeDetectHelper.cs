@@ -1,6 +1,3 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class SwipeDetectHelper : MonoBehaviour
@@ -11,10 +8,9 @@ public class SwipeDetectHelper : MonoBehaviour
     private bool inSwipe = false;
     private Vector2 startPosition;
     private Vector2 currentPosition;
-    
+    private Camera mainCamera;
     public delegate void SwipeDone(Vector2Int diraction);
     public event SwipeDone OnSwipe;
-    // Start is called before the first frame update
     void Awake()
     {
         if (Instance == null)
@@ -32,19 +28,23 @@ public class SwipeDetectHelper : MonoBehaviour
         
     }
 
-    // Update is called once per frame
+    private void Start()
+    {
+        mainCamera = Camera.main;
+    }
+    
     void Update()
     {
         if (Input.GetMouseButtonDown(0))
         {
             inSwipe = true;
-            startPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+            startPosition = mainCamera.ScreenToWorldPoint(Input.mousePosition);
         }
         if (Input.GetMouseButton(0))
         {
             if (inSwipe)
             {
-                currentPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+                currentPosition = mainCamera.ScreenToWorldPoint(Input.mousePosition);
                 CheckSwipe();
             }
         }

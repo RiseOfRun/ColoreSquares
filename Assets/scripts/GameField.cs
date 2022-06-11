@@ -1,14 +1,7 @@
-using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Data;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Transactions;
-using Unity.Mathematics;
 using UnityEngine;
-using UnityEngine.Diagnostics;
-using Random = UnityEngine.Random;
+
 
 public class GameField : MonoBehaviour
 {
@@ -160,6 +153,13 @@ public class GameField : MonoBehaviour
         Set(currentPosition, current);
     }
 
+    private void CheckSquareToWin(Square sq)
+    {
+        if ((int)Mathf.Pow(2,sq.Weight)==4)
+        {
+            GameController.Instance.WinGame();
+        }
+    }
     void Print()
     {
         string a = "";
@@ -192,6 +192,18 @@ public class GameField : MonoBehaviour
         }
 
         CanSpawn = true;
+    }
+
+    public bool CheckWinSquare(int winNumber)
+    {
+        foreach (Square square in field)
+        {
+            if (square!=null && (int) Mathf.Pow(2, square.Weight) >= winNumber)
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     public void SpawnRandomSquare()
@@ -299,11 +311,6 @@ public class GameField : MonoBehaviour
                 if (Square.Compatible(nextCell, cell)) return false;
             }
         }
-        foreach (var cell in field)
-        {
-            
-        }
-
         return true;
     }
 }

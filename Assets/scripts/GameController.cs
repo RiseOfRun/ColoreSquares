@@ -11,20 +11,13 @@ using Random = System.Random;
 public class GameController : MonoBehaviour
 {
     public static GameController Instance;
-
     public GameObject LosePanel;
-
     public int Score
     {
         get => score;
         set
         {
             score = value;
-            if (value == 2048)
-            {
-                WinPanel.SetActive(true);
-            }
-
             if (score > BestScore)
             {
                 BestScore = score;
@@ -34,8 +27,10 @@ public class GameController : MonoBehaviour
     }
 
     public int BestScore = 0;
+    [FormerlySerializedAs("GameWinYet")] public bool GameWonYet = false;
     public bool CanBack;
     public bool GameOnPause;
+    public int WinNumber = 2048;
     public GameObject WinPanel;
     [FormerlySerializedAs("field")] public GameField Field;
 
@@ -67,6 +62,7 @@ public class GameController : MonoBehaviour
         WinPanel.SetActive(false);
         if (newGame)
         {
+            GameWonYet = false;
             CurrentSeed = UnityEngine.Random.Range(0, int.MaxValue);
             PlayerPrefs.SetInt("Random", CurrentSeed);
             PlayerPrefs.SetString("CanBack", "true");
@@ -123,8 +119,18 @@ public class GameController : MonoBehaviour
         {
             GameOver();
         }
+
+        if (!GameWonYet && Field.CheckWinSquare(WinNumber))
+        {
+            WinGame();
+        }
     }
 
+    public void WinGame()
+    {
+        WinPanel.SetActive(true);
+        GameWonYet = true;
+    }
     public void TurnPerformed()
     {
         PlayerPrefs.SetString("FieldStatementPrev", PlayerPrefs.GetString("FieldStatement"));
@@ -137,14 +143,14 @@ public class GameController : MonoBehaviour
         PlayerPrefs.SetInt("Random", CurrentSeed);
     }
 
-    public void Load(bool Undo = false)
+    public void Load(bool undo = false)
     {
         if (BestScore == 0)
         {
             StartGame(true);
         }
 
-        if (Undo)
+        if (undo)
         {
             if (!Instance.CanBack)
             {
@@ -162,6 +168,7 @@ public class GameController : MonoBehaviour
         Score = PlayerPrefs.GetInt("CurrentScore");
         CurrentSeed = PlayerPrefs.GetInt("Random");
         CanBack = bool.Parse(PlayerPrefs.GetString("CanBack"));
+        GameWonYet = Field.CheckWinSquare(WinNumber);
     }
 
     private void LoadSquares()
